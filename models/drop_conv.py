@@ -45,8 +45,11 @@ class DropConv(nn.Module):
         weights = self.active.detach() * self.theta
         gamma = F.conv2d(x, weights)
         delta = F.conv2d(x**2, torch.exp(self.log_alpha)*weights**2)
-        zeta = Variable(self.FloatTensor(torch.randn(gamma.size())))
-        return gamma + torch.sqrt(delta+1e-10)*zeta
+        # Reparameterise
+        std = torch.sqrt(delta+1e-10)
+        zeta = self.FloatTensor(std.size()).normal_()
+        zeta = Variable(zeta)
+        return zeta.mul(std).add_(gamma)
 
     def kld(self):
         # see: https://arxiv.org/pdf/1701.05369.pdf
