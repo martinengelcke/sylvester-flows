@@ -8,7 +8,7 @@ import numpy as np
 
 class DropConv(nn.Module):
 
-    def __init__(self, nin, nout, alpha_init=1.0, alpha_thresh=20):
+    def __init__(self, nin, nout, alpha_init=1.0, alpha_thresh=20, args=None):
         """
         Converting between alpha, Bernoulli, and KL:
         alpha = p/(1-p)
@@ -34,6 +34,9 @@ class DropConv(nn.Module):
         # --- Thresholding ---
         self.register_buffer('active', torch.ones_like(self.theta))
         self.log_thresh = np.log(alpha_thresh)
+        # --- Auxiliary ---
+        if args.cuda: self.FloatTensor = torch.cuda.FloatTensor
+        else: self.FloatTensor = torch.FloatTensor
 
     def forward(self, x):
         # see: https://arxiv.org/pdf/1506.02557.pdf
@@ -42,7 +45,7 @@ class DropConv(nn.Module):
         weights = self.active.detach() * self.theta
         gamma = F.conv2d(x, weights)
         delta = F.conv2d(x**2, torch.exp(self.log_alpha)*weights**2)
-        zeta = Variable(torch.randn(gamma.size()))
+        zeta = Variable(self.FloatTensor(torch.randn(gamma.size())))
         return gamma + torch.sqrt(delta+1e-10)*zeta
 
     def kld(self):
@@ -60,5 +63,6 @@ class DropConv(nn.Module):
     def limit_alpha(self):
         # Set weights to zero where threshold is exceeded
         self.active.data[(self.log_alpha.data > self.log_thresh)] = 0
+        # TODO(martin): Is it necessary to access .data here?
         self.log_alpha.data = torch.clamp(
             self.log_alpha.data, -1e10, self.log_thresh+1)

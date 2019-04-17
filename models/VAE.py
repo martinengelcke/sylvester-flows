@@ -191,11 +191,11 @@ class VictorVAE(VAE):
     def __init__(self, args):
         super(VictorVAE, self).__init__(args)
         self.skip = nn.ModuleList([
-            DropConv(32, 64, 1),
-            DropConv(32, 64, 1),
-            DropConv(64, 32, 1),
-            DropConv(64, 32, 1),
-            DropConv(64, 32, 1),
+            DropConv(32, 64, args=args),
+            DropConv(32, 64, args=args),
+            DropConv(64, 32, args=args),
+            DropConv(64, 32, args=args),
+            DropConv(64, 32, args=args),
             ])
         self.nskip = 5
 
