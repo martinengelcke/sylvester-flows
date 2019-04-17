@@ -202,11 +202,11 @@ class VictorVAE(VAE):
     def forward(self, x):
         # Encode
         skip_features = []
-        kl_dropout = 0.0
+        kl_dropout = Variable(self.FloatTensor([0.0]))
         for i, m in enumerate(self.q_z_nn):
             x = m(x)
             if self.training and i < self.nskip: skip_features.append(self.skip[i](x))
-            if self.training and i < self.nskip: kl_dropout += self.skip[i].kld()
+            if self.training and i < self.nskip: kl_dropout = kl_dropout + self.skip[i].kld()
         h = x.view(x.size(0), -1)
         # Sample
         z_mu = self.q_z_mean(h)
