@@ -51,9 +51,9 @@ def train(epoch, train_loader, model, opt, args):
 
         if batch_idx % args.log_interval == 0:
             if args.input_type == 'binary':
-                print('Epoch: {:3d} [{:5d}/{:5d} ({:2.0f}%)]  \tLoss: {:11.6f}\trec: {:11.6f}\tkl: {:11.6f}'.format(
+                print('Epoch: {:3d} [{:5d}/{:5d} ({:2.0f}%)], Loss: {:11.6f}, rec: {:11.6f}, kl: {:11.6f}, ldj/kld: {:11.6f}'.format(
                     epoch, num_data, len(train_loader.sampler), 100. * batch_idx / len(train_loader),
-                    loss.data[0], rec, kl))
+                    loss.data[0], rec, kl, ldj.data[0]/float(data.size(0))))
             else:
                 perc = 100. * batch_idx / len(train_loader)
                 tmp = 'Epoch: {:3d} [{:5d}/{:5d} ({:2.0f}%)] \tLoss: {:11.6f}\tbpd: {:8.6f}'
