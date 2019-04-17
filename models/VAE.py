@@ -197,7 +197,7 @@ class VictorVAE(VAE):
             DropConv(64, 32, 1),
             DropConv(64, 32, 1),
             ])
-        self.num_skip = 5
+        self.nskip = 5
 
     def forward(self, x):
         # Encode
@@ -205,8 +205,8 @@ class VictorVAE(VAE):
         kl_dropout = 0.0
         for i, m in enumerate(self.q_z_nn):
             x = m(x)
-            if i < self.num_skip: skip_features.append(self.skip[i](x))
-            if i < self.num_skip: kl_dropout += self.skip[i].kld()
+            if self.training and i < self.nskip: skip_features.append(self.skip[i](x))
+            if self.training and i < self.nskip: kl_dropout += self.skip[i].kld()
         h = x.view(x.size(0), -1)
         # Sample
         z_mu = self.q_z_mean(h)
@@ -215,7 +215,7 @@ class VictorVAE(VAE):
         # Decode
         h = z.view(z.size(0), self.z_size, 1, 1)
         for i, m in enumerate(self.p_x_nn):
-            if i > 0:
+            if self.training and i > 0:
                 s = F.upsample(skip_features[i-1], size=h.size(2), mode='bilinear')
                 h = s + h  # residual skip connection, or concatenate instead?
             h = m(h)

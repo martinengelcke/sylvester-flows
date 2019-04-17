@@ -12,6 +12,8 @@ import numpy as np
 def train(epoch, train_loader, model, opt, args):
 
     model.train()
+    print("Model is in training mode.")
+
     train_loss = np.zeros(len(train_loader))
     train_bpd = np.zeros(len(train_loader))
 
@@ -70,6 +72,8 @@ def train(epoch, train_loader, model, opt, args):
 
 def evaluate(data_loader, model, args, testing=False, file=None, epoch=0):
     model.eval()
+    print("Model is in evaluation mode.")
+
     loss = 0.
     batch_idx = 0
     bpd = 0.
