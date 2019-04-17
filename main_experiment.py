@@ -68,7 +68,7 @@ parser.add_argument('--max_beta', type=float, default=1., metavar='MB',
 parser.add_argument('--min_beta', type=float, default=0.0, metavar='MB',
                     help='min beta for warm-up')
 parser.add_argument('-f', '--flow', type=str, default='no_flow', choices=['planar', 'iaf', 'householder', 'orthogonal',
-                                                                          'triangular', 'no_flow'],
+                                                                          'triangular', 'no_flow', 'no_flow_victor'],
                     help="""Type of flows to use, no flows can also be selected""")
 parser.add_argument('-nf', '--num_flows', type=int, default=4,
                     metavar='NUM_FLOWS', help='Number of flow layers, ignored in absence of flows')
@@ -148,6 +148,8 @@ def run(args, kwargs):
 
     if args.flow == 'no_flow':
         model = VAE.VAE(args)
+    elif args.flow == 'no_flow_victor':
+        model = VAE.VictorVAE(args)
     elif args.flow == 'planar':
         model = VAE.PlanarVAE(args)
     elif args.flow == 'iaf':

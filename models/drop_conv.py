@@ -25,8 +25,6 @@ class DropConv(nn.Module):
         super(DropConv, self).__init__()
         # --- Parameters ---
         # Note: not using biases
-        # self.repr = f"{nin}, {nout}, init={alpha_init}, thresh={alpha_thresh}"
-        # self.repr += f", params={nin*nout}"
         self.theta = nn.Parameter(torch.Tensor(nout, nin, 1, 1))
         self.log_alpha = nn.Parameter(torch.Tensor(nout, nin, 1, 1))
         # --- Parameters init ---
@@ -36,9 +34,6 @@ class DropConv(nn.Module):
         # --- Thresholding ---
         self.register_buffer('active', torch.ones_like(self.theta))
         self.log_thresh = np.log(alpha_thresh)
-
-    def extra_repr(self):
-        return self.repr
 
     def forward(self, x):
         # see: https://arxiv.org/pdf/1506.02557.pdf

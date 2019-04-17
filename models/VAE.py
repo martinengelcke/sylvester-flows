@@ -2,9 +2,12 @@ from __future__ import print_function
 
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torch.autograd import Variable
+
 import models.flows as flows
 from models.layers import GatedConv2d, GatedConvTranspose2d
+from models.drop_conv import DropConv
 
 
 class VAE(nn.Module):
@@ -181,6 +184,46 @@ class VAE(nn.Module):
         x_mean = self.decode(z)
 
         return x_mean, z_mu, z_var, self.log_det_j, z, z
+
+
+class VictorVAE(VAE):
+    
+    def __init__(self, args):
+        super(VictorVAE, self).__init__(args)
+        self.skip = nn.ModuleList([
+            DropConv(32, 64, 1),
+            DropConv(32, 64, 1),
+            DropConv(64, 32, 1),
+            DropConv(64, 32, 1),
+            DropConv(64, 32, 1),
+            ])
+        self.num_skip = 5
+
+    def forward(self, x):
+        # Encode
+        skip_features = []
+        kl_dropout = 0.0
+        for i, m in enumerate(self.q_z_nn):
+            x = m(x)
+            if i < self.num_skip: skip_features.append(self.skip[i](x))
+            if i < self.num_skip: kl_dropout += self.skip[i].kld()
+        h = x.view(x.size(0), -1)
+        # Sample
+        z_mu = self.q_z_mean(h)
+        z_var = self.q_z_var(h)
+        z = self.reparameterize(z_mu, z_var)
+        # Decode
+        h = z.view(z.size(0), self.z_size, 1, 1)
+        for i, m in enumerate(self.p_x_nn):
+            if i > 0:
+                s = F.upsample(skip_features[i-1], size=h.size(2), mode='bilinear')
+                h = s + h  # residual skip connection, or concatenate instead?
+            h = m(h)
+        x_mean = self.p_x_mean(h)
+        # TODO(martin): This is a hacky way of adding kl_dropout to the loss function.
+        # Should do this properly.
+        log_det_j = -1.0*kl_dropout
+        return x_mean, z_mu, z_var, log_det_j, z, z
 
 
 class PlanarVAE(VAE):
