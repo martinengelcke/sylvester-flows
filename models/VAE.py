@@ -49,15 +49,14 @@ class VAE(nn.Module):
         """
 
         if self.input_type == 'binary':
-            q_z_nn = nn.Sequential(
+            q_z_nn = nn.ModuleList([
                 GatedConv2d(self.input_size[0], 32, 5, 1, 2),
                 GatedConv2d(32, 32, 5, 2, 2),
                 GatedConv2d(32, 64, 5, 1, 2),
                 GatedConv2d(64, 64, 5, 2, 2),
                 GatedConv2d(64, 64, 5, 1, 2),
                 GatedConv2d(64, 256, self.last_kernel_size, 1, 0),
-
-            )
+            ])
             q_z_mean = nn.Linear(256, self.z_size)
             q_z_var = nn.Sequential(
                 nn.Linear(256, self.z_size),
@@ -68,14 +67,14 @@ class VAE(nn.Module):
         elif self.input_type == 'multinomial':
             act = None
 
-            q_z_nn = nn.Sequential(
+            q_z_nn = nn.ModuleList([
                 GatedConv2d(self.input_size[0], 32, 5, 1, 2, activation=act),
                 GatedConv2d(32, 32, 5, 2, 2, activation=act),
                 GatedConv2d(32, 64, 5, 1, 2, activation=act),
                 GatedConv2d(64, 64, 5, 2, 2, activation=act),
                 GatedConv2d(64, 64, 5, 1, 2, activation=act),
                 GatedConv2d(64, 256, self.last_kernel_size, 1, 0, activation=act)
-            )
+            ])
             q_z_mean = nn.Linear(256, self.z_size)
             q_z_var = nn.Sequential(
                 nn.Linear(256, self.z_size),
@@ -93,14 +92,14 @@ class VAE(nn.Module):
         num_classes = 256
 
         if self.input_type == 'binary':
-            p_x_nn = nn.Sequential(
+            p_x_nn = nn.ModuleList([
                 GatedConvTranspose2d(self.z_size, 64, self.last_kernel_size, 1, 0),
                 GatedConvTranspose2d(64, 64, 5, 1, 2),
                 GatedConvTranspose2d(64, 32, 5, 2, 2, 1),
                 GatedConvTranspose2d(32, 32, 5, 1, 2),
                 GatedConvTranspose2d(32, 32, 5, 2, 2, 1),
                 GatedConvTranspose2d(32, 32, 5, 1, 2)
-            )
+            ])
 
             p_x_mean = nn.Sequential(
                 nn.Conv2d(32, self.input_size[0], 1, 1, 0),
@@ -110,14 +109,14 @@ class VAE(nn.Module):
 
         elif self.input_type == 'multinomial':
             act = None
-            p_x_nn = nn.Sequential(
+            p_x_nn = nn.ModuleList([
                 GatedConvTranspose2d(self.z_size, 64, self.last_kernel_size, 1, 0, activation=act),
                 GatedConvTranspose2d(64, 64, 5, 1, 2, activation=act),
                 GatedConvTranspose2d(64, 32, 5, 2, 2, 1, activation=act),
                 GatedConvTranspose2d(32, 32, 5, 1, 2, activation=act),
                 GatedConvTranspose2d(32, 32, 5, 2, 2, 1, activation=act),
                 GatedConvTranspose2d(32, 32, 5, 1, 2, activation=act)
-            )
+            ])
 
             p_x_mean = nn.Sequential(
                 nn.Conv2d(32, 256, 5, 1, 2),
@@ -148,8 +147,9 @@ class VAE(nn.Module):
         Encoder expects following data shapes as input: shape = (batch_size, num_channels, width, height)
         """
 
-        h = self.q_z_nn(x)
-        h = h.view(h.size(0), -1)
+        for module in self.q_z_nn:
+            x = module(x)
+        h = x.view(x.size(0), -1)
         mean = self.q_z_mean(h)
         var = self.q_z_var(h)
 
@@ -161,8 +161,9 @@ class VAE(nn.Module):
         x_mean.shape = (batch_size, num_channels, width, height)
         """
 
-        z = z.view(z.size(0), self.z_size, 1, 1)
-        h = self.p_x_nn(z)
+        h = z.view(z.size(0), self.z_size, 1, 1)
+        for module in self.p_x_nn:
+            h = module(h)
         x_mean = self.p_x_mean(h)
 
         return x_mean
